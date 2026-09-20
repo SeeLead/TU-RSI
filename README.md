@@ -6,8 +6,7 @@ mengikuti logika EA:
 
 - Lot level ke-n = `Lot Awal × Pengali^(n-1)` (dibatasi oleh Batas Maksimal Lot bila diisi)
 - Jarak antar level tetap dalam pips (`AddPositionPips`)
-- Take Profit dihitung dari harga rata-rata (pips) **atau** target USD tetap
-  (kalau target USD diisi > 0, ini menggantikan TP pips — sama seperti di EA)
+- Take Profit dihitung dari harga rata-rata (pips)
 
 Tidak ada kurva/grafik, hanya tabel angka per level sesuai permintaan.
 

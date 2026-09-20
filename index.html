@@ -113,30 +113,6 @@
   }
   .checkrow input{width:16px;height:16px;accent-color:var(--amber);}
   .checkrow label{font-size:.84rem;}
-  .tp-mode{
-    display:flex;
-    background:var(--panel-2);
-    border:1px solid var(--line);
-    border-radius:9px;
-    padding:3px;
-    margin-bottom:12px;
-  }
-  .tp-mode button{
-    flex:1;
-    background:transparent;
-    border:none;
-    color:var(--muted);
-    padding:7px 4px;
-    font-size:.78rem;
-    border-radius:7px;
-    cursor:pointer;
-    font-family:var(--sans);
-  }
-  .tp-mode button.active{
-    background:var(--amber);
-    color:#1a1200;
-    font-weight:650;
-  }
   .summary{
     display:grid;
     grid-template-columns:repeat(3,1fr);
@@ -245,7 +221,7 @@
     <img src="icons/icon-192.png" alt="">
     <h1>Kalkulator Grid Martingale — Tunggak Semi</h1>
   </div>
-  <p>Menghitung lot, floating loss (drawdown), dan estimasi profit basket sampai posisi ke-x, berdasarkan cara kerja EA: lot bertambah dengan pengali di setiap level, jarak antar level tetap dalam pips, TP dihitung dari harga rata-rata atau target USD tetap.</p>
+  <p>Menghitung lot, floating loss (drawdown), dan estimasi profit basket sampai posisi ke-x, berdasarkan cara kerja EA: lot bertambah dengan pengali di setiap level, jarak antar level tetap dalam pips, TP dihitung dari harga rata-rata.</p>
 </header>
 
 <main>
@@ -281,25 +257,14 @@
       <input type="number" id="stepPips" value="200" step="1" min="1">
     </div>
 
-    <div class="tp-mode">
-      <button type="button" data-mode="pips" class="active">TP dalam Pips</button>
-      <button type="button" data-mode="usd">TP dalam USD Tetap</button>
-    </div>
-
-    <div class="field" id="tpPipsField">
+    <div class="field">
       <label for="tpPips">Take Profit (pips dari harga rata-rata)</label>
       <input type="number" id="tpPips" value="200" step="1" min="0">
     </div>
 
-    <div class="field" id="tpUsdField" style="display:none;">
-      <label for="tpUsd">Take Profit (USD, target basket tetap)</label>
-      <input type="number" id="tpUsd" value="0" step="0.1" min="0">
-      <span class="hint">Sesuai EA: jika diisi &gt; 0, ini menggantikan TP pips dan berlaku sama di semua level.</span>
-    </div>
-
     <div class="field">
       <label for="pipValue">Nilai per Pip untuk 1.0 Lot (USD)</label>
-      <input type="number" id="pipValue" value="10" step="0.01" min="0.01">
+      <input type="number" id="pipValue" value="1" step="0.01" min="0.01">
       <span class="hint">Cek spesifikasi kontrak di broker Anda untuk pair/instrumen ini. Contoh umum: forex mayor ±$10, XAUUSD tergantung definisi pip broker.</span>
     </div>
 
@@ -340,7 +305,7 @@
 </main>
 
 <footer>
-  Perhitungan ini adalah simulasi teoretis berdasarkan logika lot dan jarak level pada skrip EA (lot = Lot Awal × Pengali^(level-1), jarak antar level tetap dalam pips, TP dari rata-rata atau target USD tetap). Belum memperhitungkan spread, swap, komisi, slippage, batas volume broker, dan margin call. Gunakan hanya sebagai gambaran, bukan jaminan hasil trading.
+  Perhitungan ini adalah simulasi teoretis berdasarkan logika lot dan jarak level pada skrip EA (lot = Lot Awal × Pengali^(level-1), jarak antar level tetap dalam pips, TP dari harga rata-rata). Belum memperhitungkan spread, swap, komisi, slippage, batas volume broker, dan margin call. Gunakan hanya sebagai gambaran, bukan jaminan hasil trading.
 </footer>
 
 <script>
@@ -352,27 +317,11 @@
     maxLotLimit: document.getElementById('maxLotLimit'),
     stepPips: document.getElementById('stepPips'),
     tpPips: document.getElementById('tpPips'),
-    tpUsd: document.getElementById('tpUsd'),
     pipValue: document.getElementById('pipValue'),
     maxLevel: document.getElementById('maxLevel'),
   };
   const rowsEl = document.getElementById('rows');
   const summaryEl = document.getElementById('summary');
-  const tpPipsField = document.getElementById('tpPipsField');
-  const tpUsdField = document.getElementById('tpUsdField');
-  const modeBtns = document.querySelectorAll('.tp-mode button');
-  let tpMode = 'pips';
-
-  modeBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      modeBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      tpMode = btn.dataset.mode;
-      tpPipsField.style.display = tpMode === 'pips' ? '' : 'none';
-      tpUsdField.style.display = tpMode === 'usd' ? '' : 'none';
-      compute();
-    });
-  });
 
   function fmtUsd(n){
     const sign = n < 0 ? '-' : '';
@@ -389,11 +338,8 @@
     const maxLot = parseFloat(els.maxLotLimit.value) || 0;
     const stepPips = parseFloat(els.stepPips.value) || 0;
     const tpPips = parseFloat(els.tpPips.value) || 0;
-    const tpUsd = parseFloat(els.tpUsd.value) || 0;
     const pipValue = parseFloat(els.pipValue.value) || 0;
     const maxLevel = Math.min(Math.max(parseInt(els.maxLevel.value) || 1, 1), 200);
-
-    const usdMode = tpMode === 'usd' && tpUsd > 0;
 
     let lots = [];
     let cumLot = 0;
@@ -421,7 +367,7 @@
         floatLoss += distJ * lots[j] * pipValue;
       }
 
-      const profit = usdMode ? tpUsd : (tpPips * cumLot * pipValue);
+      const profit = tpPips * cumLot * pipValue;
 
       if(level === maxLevel){
         finalFloatLoss = floatLoss;
@@ -456,7 +402,7 @@
       <div class="stat">
         <div class="k">Estimasi Profit jika TP</div>
         <div class="v green">${fmtUsd(finalProfit)}</div>
-        <div class="sub">${usdMode ? 'Target basket tetap (USD)' : 'TP ' + tpPips + ' pips dari rata-rata'}</div>
+        <div class="sub">TP ${tpPips} pips dari rata-rata</div>
       </div>
     `;
 
@@ -469,7 +415,6 @@
       Object.keys(els).forEach(k => {
         state[k] = els[k].type === 'checkbox' ? els[k].checked : els[k].value;
       });
-      state.tpMode = tpMode;
       localStorage.setItem('tunggaksemi-calc-state', JSON.stringify(state));
     }catch(e){}
   }
@@ -484,12 +429,6 @@
         if(els[k].type === 'checkbox') els[k].checked = state[k];
         else els[k].value = state[k];
       });
-      if(state.tpMode){
-        tpMode = state.tpMode;
-        modeBtns.forEach(b => b.classList.toggle('active', b.dataset.mode === tpMode));
-        tpPipsField.style.display = tpMode === 'pips' ? '' : 'none';
-        tpUsdField.style.display = tpMode === 'usd' ? '' : 'none';
-      }
     }catch(e){}
   }
 
