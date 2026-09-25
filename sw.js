@@ -4,7 +4,7 @@
 // versi kode terbaru setiap kali online, tanpa perlu menaikkan versi
 // cache secara manual.
 
-const CACHE_NAME = 'tunggaksemi-calc-v2';
+const CACHE_NAME = 'tunggaksemi-calc-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -12,8 +12,7 @@ const CORE_ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png',
-  './icons/icon-180.png',
-  './icons/favicon-32.png'
+  './icons/icon-180.png'
 ];
 
 self.addEventListener('install', (event) => {

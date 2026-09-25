@@ -56,6 +56,10 @@ terbuka tanpa address bar browser.
    harus persis sama) ikut ter-upload ke GitHub — cek langsung dengan membuka
    `https://<username>.github.io/<repo>/icons/icon-192.png` di browser HP;
    kalau muncul gambar ikon, filenya sudah benar.
+   (Logo di halaman dan favicon tab browser sudah ditanam langsung di dalam
+   `index.html`, jadi keduanya tidak lagi bergantung pada folder `icons/` —
+   hanya ikon shortcut Android/manifest dan `apple-touch-icon` iOS yang masih
+   memakai file di folder tersebut.)
 2. Di HP, hapus dulu shortcut lama yang sudah kadung dibuat, lalu di Chrome
    buka **Settings → Site settings/Storage → cari domain github.io →
    Clear & reset** (atau hapus data situs) supaya service worker & cache
