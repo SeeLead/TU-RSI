@@ -4,19 +4,30 @@
 // versi kode terbaru setiap kali online, tanpa perlu menaikkan versi
 // cache secara manual.
 
-const CACHE_NAME = 'tunggaksemi-calc-v1';
+const CACHE_NAME = 'tunggaksemi-calc-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon-512-maskable.png'
+  './icons/icon-512-maskable.png',
+  './icons/icon-180.png',
+  './icons/favicon-32.png'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
+    caches.open(CACHE_NAME).then((cache) =>
+      // Cache setiap aset secara terpisah: kalau satu file gagal (mis. path
+      // salah atau jaringan lambat), instalasi service worker tetap lanjut
+      // untuk aset lainnya, bukannya gagal total.
+      Promise.all(
+        CORE_ASSETS.map((url) =>
+          cache.add(url).catch((err) => console.warn('Gagal cache:', url, err))
+        )
+      )
+    )
   );
   self.skipWaiting();
 });

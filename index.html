@@ -7,8 +7,8 @@
 <meta name="description" content="Hitung drawdown dan profit sampai posisi ke-x untuk EA grid/martingale Tunggak Semi.">
 <meta name="theme-color" content="#12161C">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
 <style>
   :root{
     --bg:#0F1319;
@@ -180,7 +180,7 @@
     border:1px solid var(--line);
     border-radius:14px;
   }
-  .table-wrap table{min-width:640px;}
+  .table-wrap table{min-width:880px;}
   .table-wrap .panel-pad{padding:16px 16px 4px;}
   footer{
     max-width:1080px;
@@ -250,6 +250,28 @@
       <span class="hint">0 = tanpa batas</span>
     </div>
 
+    <h2 style="margin-top:22px;">Harga &amp; Arah Posisi</h2>
+
+    <div class="field">
+      <label for="direction">Arah Posisi</label>
+      <select id="direction">
+        <option value="buy">Buy</option>
+        <option value="sell">Sell</option>
+      </select>
+      <span class="hint">Buy: posisi berikutnya dibuka lebih rendah. Sell: posisi berikutnya dibuka lebih tinggi.</span>
+    </div>
+
+    <div class="field">
+      <label for="anchorPrice">Harga Perolehan Posisi Pertama</label>
+      <input type="number" id="anchorPrice" value="" step="0.01" placeholder="mis. 2350.50">
+    </div>
+
+    <div class="field">
+      <label for="pipSize">Ukuran 1 Pip</label>
+      <input type="number" id="pipSize" value="0.01" step="0.01">
+      <span class="hint">Default 0.01 untuk XAUUSD. Ubah jika broker Anda memakai definisi pip yang berbeda.</span>
+    </div>
+
     <h2 style="margin-top:22px;">Jarak &amp; Take Profit</h2>
 
     <div class="field">
@@ -287,8 +309,10 @@
             <th>Level</th>
             <th>Lot</th>
             <th>Lot Kumulatif</th>
-            <th>Jarak dari Anchor (pips)</th>
+            <th>Harga Entry</th>
+            <th>Harga Rata-rata</th>
             <th>Floating Loss di Level Ini</th>
+            <th>Harga TP</th>
             <th>Estimasi Profit jika TP</th>
           </tr>
         </thead>
@@ -315,6 +339,9 @@
     enableMultiplier: document.getElementById('enableMultiplier'),
     lotMultiplier: document.getElementById('lotMultiplier'),
     maxLotLimit: document.getElementById('maxLotLimit'),
+    direction: document.getElementById('direction'),
+    anchorPrice: document.getElementById('anchorPrice'),
+    pipSize: document.getElementById('pipSize'),
     stepPips: document.getElementById('stepPips'),
     tpPips: document.getElementById('tpPips'),
     pipValue: document.getElementById('pipValue'),
@@ -330,6 +357,14 @@
   function fmtLot(n){
     return n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
+  function countDecimals(rawStr){
+    if(!rawStr || rawStr.indexOf('.') === -1) return 0;
+    return rawStr.split('.')[1].length;
+  }
+  function fmtPrice(n, decimals){
+    if(!isFinite(n)) return '—';
+    return n.toLocaleString('en-US', {minimumFractionDigits:decimals, maximumFractionDigits:decimals});
+  }
 
   function compute(){
     const initialLot = parseFloat(els.initialLot.value) || 0;
@@ -341,13 +376,25 @@
     const pipValue = parseFloat(els.pipValue.value) || 0;
     const maxLevel = Math.min(Math.max(parseInt(els.maxLevel.value) || 1, 1), 200);
 
+    const direction = els.direction.value; // 'buy' or 'sell'
+    const anchorRaw = els.anchorPrice.value;
+    const anchorPrice = parseFloat(anchorRaw);
+    const hasAnchor = anchorRaw !== '' && isFinite(anchorPrice);
+    const pipSizeRaw = els.pipSize.value;
+    const pipSize = parseFloat(pipSizeRaw) || 0.01;
+    const priceDecimals = Math.max(countDecimals(anchorRaw), countDecimals(pipSizeRaw), 2);
+    const sign = direction === 'sell' ? 1 : -1; // buy: harga bergerak turun; sell: harga bergerak naik
+
     let lots = [];
     let cumLot = 0;
+    let weightedDistSum = 0;
     let rowsHtml = '';
     let finalFloatLoss = 0;
     let finalProfit = 0;
     let finalCumLot = 0;
-    let finalDistance = 0;
+    let finalAvgPrice = null;
+    let finalTpPrice = null;
+    let finalEntryPrice = null;
 
     for(let level = 1; level <= maxLevel; level++){
       let lot = initialLot;
@@ -359,6 +406,12 @@
       cumLot += lot;
 
       const distance = (level - 1) * stepPips;
+      weightedDistSum += distance * lot;
+      const avgDistance = cumLot > 0 ? weightedDistSum / cumLot : 0;
+
+      const entryPrice = hasAnchor ? anchorPrice + sign * distance * pipSize : null;
+      const avgPrice = hasAnchor ? anchorPrice + sign * avgDistance * pipSize : null;
+      const tpPrice = hasAnchor ? avgPrice - sign * tpPips * pipSize : null;
 
       // floating loss if price has just reached this level's entry
       let floatLoss = 0;
@@ -373,15 +426,19 @@
         finalFloatLoss = floatLoss;
         finalProfit = profit;
         finalCumLot = cumLot;
-        finalDistance = distance;
+        finalAvgPrice = avgPrice;
+        finalTpPrice = tpPrice;
+        finalEntryPrice = entryPrice;
       }
 
       rowsHtml += `<tr>
         <td>${level}</td>
         <td>${fmtLot(lot)}</td>
         <td>${fmtLot(cumLot)}</td>
-        <td>${distance.toLocaleString('en-US')}</td>
+        <td>${hasAnchor ? fmtPrice(entryPrice, priceDecimals) : '—'}</td>
+        <td>${hasAnchor ? fmtPrice(avgPrice, priceDecimals) : '—'}</td>
         <td class="red">${fmtUsd(-floatLoss)}</td>
+        <td>${hasAnchor ? fmtPrice(tpPrice, priceDecimals) : '—'}</td>
         <td class="green">${fmtUsd(profit)}</td>
       </tr>`;
     }
@@ -392,17 +449,17 @@
       <div class="stat">
         <div class="k">Lot Kumulatif di Posisi ${maxLevel}</div>
         <div class="v">${fmtLot(finalCumLot)}</div>
-        <div class="sub">Jarak dari anchor: ${finalDistance.toLocaleString('en-US')} pips</div>
+        <div class="sub">${hasAnchor ? 'Harga rata-rata: ' + fmtPrice(finalAvgPrice, priceDecimals) : 'Isi harga perolehan posisi 1 untuk lihat harga rata-rata'}</div>
       </div>
       <div class="stat">
         <div class="k">Floating Loss (Drawdown)</div>
         <div class="v red">${fmtUsd(-finalFloatLoss)}</div>
-        <div class="sub">Jika harga tepat di level ${maxLevel}</div>
+        <div class="sub">${hasAnchor ? 'Harga di level ' + maxLevel + ': ' + fmtPrice(finalEntryPrice, priceDecimals) : 'Jika harga tepat di level ' + maxLevel}</div>
       </div>
       <div class="stat">
         <div class="k">Estimasi Profit jika TP</div>
         <div class="v green">${fmtUsd(finalProfit)}</div>
-        <div class="sub">TP ${tpPips} pips dari rata-rata</div>
+        <div class="sub">${hasAnchor ? 'Harga TP: ' + fmtPrice(finalTpPrice, priceDecimals) : 'TP ' + tpPips + ' pips dari rata-rata'}</div>
       </div>
     `;
 
@@ -432,7 +489,10 @@
     }catch(e){}
   }
 
-  Object.values(els).forEach(el => el.addEventListener('input', compute));
+  Object.values(els).forEach(el => {
+    el.addEventListener('input', compute);
+    el.addEventListener('change', compute);
+  });
   loadState();
   compute();
 

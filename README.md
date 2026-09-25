@@ -7,6 +7,8 @@ mengikuti logika EA:
 - Lot level ke-n = `Lot Awal × Pengali^(n-1)` (dibatasi oleh Batas Maksimal Lot bila diisi)
 - Jarak antar level tetap dalam pips (`AddPositionPips`)
 - Take Profit dihitung dari harga rata-rata (pips)
+- Harga rata-rata dan harga TP dihitung berdasarkan harga perolehan posisi
+  pertama, arah posisi (Buy/Sell), dan ukuran 1 pip yang Anda isi sendiri
 
 Tidak ada kurva/grafik, hanya tabel angka per level sesuai permintaan.
 
@@ -47,6 +49,22 @@ hanya cadangan saat offline).
 
 Ikon kalkulator akan muncul di layar utama HP seperti aplikasi biasa, dan
 terbuka tanpa address bar browser.
+
+## Jika ikon shortcut tetap tidak muncul
+
+1. Pastikan folder `icons/` beserta semua file di dalamnya (huruf besar/kecil
+   harus persis sama) ikut ter-upload ke GitHub — cek langsung dengan membuka
+   `https://<username>.github.io/<repo>/icons/icon-192.png` di browser HP;
+   kalau muncul gambar ikon, filenya sudah benar.
+2. Di HP, hapus dulu shortcut lama yang sudah kadung dibuat, lalu di Chrome
+   buka **Settings → Site settings/Storage → cari domain github.io →
+   Clear & reset** (atau hapus data situs) supaya service worker & cache
+   lama yang mungkin sempat gagal ter-hapus bersih.
+3. Buka lagi URL-nya, tunggu halaman termuat penuh (biarkan beberapa detik
+   agar service worker & manifest selesai diproses), baru lakukan
+   **Tambahkan ke Layar Utama**.
+4. Di iPhone, ikon shortcut memakai `apple-touch-icon`, bukan `manifest.json`
+   — pastikan `icons/icon-180.png` juga ikut ter-upload.
 
 ## Catatan
 
